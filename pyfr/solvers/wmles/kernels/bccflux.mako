@@ -1,7 +1,7 @@
 <%inherit file='base'/>
 <%namespace module='pyfr.backends.base.makoutil' name='pyfr'/>
 
-<%include file='pyfr.solvers.wmles.kernels.sgs.smagorinsky'/>
+<%include file='pyfr.solvers.wmles.kernels.sgs.${sgs_model}'/>
 <%include file='pyfr.solvers.wmles.kernels.bcs.${bctype}'/>
 
 % if bccfluxstate:
@@ -11,6 +11,7 @@
 <%pyfr:kernel name='bccflux' ndim='1'
               ul='inout view fpdtype_t[${str(nvars)}]'
               gradul='in view fpdtype_t[${str(ndims)}][${str(nvars)}]'
+              rcpdjacl='in view fpdtype_t'
               artviscl='in view fpdtype_t'
               nl='in fpdtype_t[${str(ndims)}]'>
     fpdtype_t mag_nl = sqrt(${pyfr.dot('nl[{i}]', i=ndims)});

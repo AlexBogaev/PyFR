@@ -54,6 +54,14 @@ class BaseAdvectionDiffusionElements(BaseAdvectionElements):
             'jac_exprs': self.basis.jac_exprs
         }
 
+        # ensure that rcpdjac is calculated and stored for both upts and fpts
+        if 'curved' in regions:
+            self.rcpdjac_upts = self.rcpdjac_at('upts', 'curved')
+            self.rcpdjac_fpts = self.rcpdjac_at('fpts', 'curved')
+        else:
+            self.rcpdjac_upts = self.rcpdjac_at('upts')
+            self.rcpdjac_fpts = self.rcpdjac_at('fpts')
+
         gradcoru_u = []
         if 'curved' in regions:
             gradcoru_u.append(lambda: kernel(
@@ -149,6 +157,10 @@ class BaseAdvectionDiffusionElements(BaseAdvectionElements):
             self.artvisc = None
         else:
             raise ValueError('Invalid shock capturing scheme')
+        
+    def get_rcpdjac_fpts_for_inter(self, eidx, fidx):
+        nfp = self.nfacefpts[fidx]
+        return (self.rcpdjac_fpts,)*nfp, (0,)*nfp, (eidx,)*nfp
 
     def get_artvisc_fpts_for_inter(self, eidx, fidx):
         nfp = self.nfacefpts[fidx]

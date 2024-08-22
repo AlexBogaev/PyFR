@@ -1,7 +1,7 @@
 <%inherit file='base'/>
 <%namespace module='pyfr.backends.base.makoutil' name='pyfr'/>
 
-<%include file='pyfr.solvers.wmles.kernels.sgs.smagorinsky'/>
+<%include file='pyfr.solvers.wmles.kernels.sgs.${sgs_model}'/>
 <%include file='pyfr.solvers.baseadvecdiff.kernels.artvisc'/>
 <%include file='pyfr.solvers.euler.kernels.rsolvers.${rsolver}'/>
 <%include file='pyfr.solvers.wmles.kernels.flux'/>
@@ -14,6 +14,8 @@
               ur='inout mpi fpdtype_t[${str(nvars)}]'
               gradul='in view fpdtype_t[${str(ndims)}][${str(nvars)}]'
               gradur='in mpi fpdtype_t[${str(ndims)}][${str(nvars)}]'
+              rcpdjacl='in view fpdtype_t'
+              rcpdjacr='in mpi fpdtype_t'
               artviscl='in view fpdtype_t'
               artviscr='in mpi fpdtype_t'
               nl='in fpdtype_t[${str(ndims)}]'>
@@ -27,12 +29,14 @@
 % if beta != -0.5:
     fpdtype_t fvl[${ndims}][${nvars}] = {{0}};
     ${pyfr.expand('viscous_flux_add', 'ul', 'gradul', 'fvl')};
+    ${pyfr.expand('eddy_viscous_flux_add', 'ul', 'gradul', 'rcpdjacl', 'fvl')};
     ${pyfr.expand('artificial_viscosity_add', 'gradul', 'fvl', 'artviscl')};
 % endif
 
 % if beta != 0.5:
     fpdtype_t fvr[${ndims}][${nvars}] = {{0}};
     ${pyfr.expand('viscous_flux_add', 'ur', 'gradur', 'fvr')};
+    ${pyfr.expand('eddy_viscous_flux_add', 'ur', 'gradur', 'rcpdjacr', 'fvr')};
     ${pyfr.expand('artificial_viscosity_add', 'gradur', 'fvr', 'artviscr')};
 % endif
 

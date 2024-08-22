@@ -57,6 +57,7 @@ class BaseAdvectionDiffusionSystem(BaseAdvectionSystem):
         g1.commit()
 
         g2 = self.backend.graph()
+        g2.add_mpi_reqs(m['rcpdjac_fpts_send'] + m['rcpdjac_fpts_recv'])
         g2.add_mpi_reqs(m['artvisc_fpts_send'] + m['artvisc_fpts_recv'])
         g2.add_mpi_reqs(m['vect_fpts_recv'])
 
@@ -93,6 +94,11 @@ class BaseAdvectionDiffusionSystem(BaseAdvectionSystem):
         # Pack and send these interpolated gradients to our neighbours
         g2.add_all(k['mpiint/vect_fpts_pack'], deps=ideps)
         for send, pack in zip(m['vect_fpts_send'], k['mpiint/vect_fpts_pack']):
+            g2.add_mpi_req(send, deps=[pack])
+
+        # Pack and send rcpdjac to our neighbours
+        g2.add_all(k['mpiint/rcpdjac_fpts_pack'], deps=ideps)
+        for send, pack in zip(m['rcpdjac_fpts_send'], k['mpiint/rcpdjac_fpts_pack']):
             g2.add_mpi_req(send, deps=[pack])
 
         # Compute the common normal flux at our internal/boundary interfaces
@@ -139,10 +145,12 @@ class BaseAdvectionDiffusionSystem(BaseAdvectionSystem):
         g3 = self.backend.graph()
 
         # Compute the common normal flux at our MPI interfaces
+        g3.add_all(k['mpiint/rcpdjac_fpts_unpack'])
         g3.add_all(k['mpiint/artvisc_fpts_unpack'])
         g3.add_all(k['mpiint/vect_fpts_unpack'])
         for l in k['mpiint/comm_flux']:
-            ldeps = deps(l, 'mpiint/artvisc_fpts_unpack',
+            ldeps = deps(l, 'mpiint/rcpdjac_fpts_unpack',
+                         'mpiint/artvisc_fpts_unpack',
                          'mpiint/vect_fpts_unpack')
             g3.add(l, deps=ldeps)
 
